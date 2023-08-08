@@ -4,9 +4,12 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController instance;
+
     // 필요한 컴퍼넌트
-    private Rigidbody2D rigid;
-    [SerializeField] private GameObject[] characters; 
+    [SerializeField] private Transform tr;
+    [SerializeField] private Rigidbody2D rigid;
+    [SerializeField] private GameObject[] characters;
     private SpriteRenderer spriteRenderer;
     private Animator anim;
 
@@ -14,12 +17,21 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float speed;       // 기본 이동 속도
     [SerializeField] private float addSpeed;    // 추가 이동 속도
 
-    private bool isDie = false;
+    private Vector2 dir;
+
+    private bool isFight = false;
     private bool isWalk = false;
+    private bool isDie = false;
 
     private void Awake()
     {
-        rigid = GetComponent<Rigidbody2D>();
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(this.gameObject);
+        }
+        else Destroy(this.gameObject);
+
         for(int i = 0; i < characters.Length; i++)
         {
             if (characters[i].activeSelf)
@@ -29,12 +41,14 @@ public class PlayerController : MonoBehaviour
                 break;
             }
         }
+
+        isFight = true;
     }
     
     private void Update()
     {
         Test();
-        if (!isDie)
+        if (!isDie && isFight)
         {
             Move();
         }
@@ -63,12 +77,12 @@ public class PlayerController : MonoBehaviour
         if (dirX > 0) spriteRenderer.flipX = false;
         else if( dirX < 0)spriteRenderer.flipX = true;
 
-        Vector2 _moveHorizontal = transform.right * dirX;
-        Vector2 _moveVertical = transform.up * dirY;
+        Vector2 _moveHorizontal = tr.right * dirX;
+        Vector2 _moveVertical = tr.up * dirY;
 
-        Vector2 movePos = (_moveHorizontal + _moveVertical).normalized * (speed + addSpeed) * Time.deltaTime;
+        dir = (_moveHorizontal + _moveVertical).normalized;
 
-        rigid.MovePosition(rigid.position + movePos);
+        rigid.MovePosition(rigid.position + dir * (speed + addSpeed) * Time.deltaTime);
     }
 
     private void Die()
@@ -78,5 +92,10 @@ public class PlayerController : MonoBehaviour
             isDie = true;
             anim.SetTrigger("ToDie");
         }
+    }
+
+    public Vector2 GetDirection()
+    {
+        return dir;
     }
 }
